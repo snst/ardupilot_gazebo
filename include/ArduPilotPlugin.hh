@@ -83,6 +83,8 @@ namespace gazebo
     /// \brief Init ardupilot socket
     private: bool InitArduPilotSockets(sdf::ElementPtr _sdf) const;
 
+    private: static void* pwm_worker( void *ptr );
+
     /// \brief Private data pointer.
     private: std::unique_ptr<ArduPilotPluginPrivate> dataPtr;
 

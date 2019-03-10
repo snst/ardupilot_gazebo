@@ -27,6 +27,7 @@
   #include <netinet/in.h>
   #include <netinet/tcp.h>
   #include <arpa/inet.h>
+  #include <pthread.h>
   using raw_type = void;
 #endif
 
@@ -47,7 +48,7 @@
 #include <gazebo/transport/transport.hh>
 #include "include/ArduPilotPlugin.hh"
 
-#define MAX_MOTORS 255
+#define MAX_MOTORS 4
 
 using namespace gazebo;
 
@@ -368,6 +369,9 @@ class gazebo::ArduPilotPluginPrivate
   /// \brief number of times ArduCotper skips update
   /// before marking ArduPilot offline
   public: int connectionTimeoutMaxCount;
+
+  public: pthread_t pwm_thread;
+
 };
 
 /////////////////////////////////////////////////
@@ -837,7 +841,9 @@ void ArduPilotPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 /////////////////////////////////////////////////
 void ArduPilotPlugin::OnUpdate()
 {
+ // printf("onUpdate1\n");
   std::lock_guard<std::mutex> lock(this->dataPtr->mutex);
+ // printf("onUpdate2\n");
 
   const gazebo::common::Time curTime =
     this->dataPtr->model->GetWorld()->SimTime();
@@ -845,13 +851,17 @@ void ArduPilotPlugin::OnUpdate()
   // Update the control surfaces and publish the new state.
   if (curTime > this->dataPtr->lastControllerUpdateTime)
   {
-    this->ReceiveMotorCommand();
+    //this->ReceiveMotorCommand();
     if (this->dataPtr->arduPilotOnline)
     {
       this->ApplyMotorForces((curTime -
         this->dataPtr->lastControllerUpdateTime).Double());
       this->SendState();
     }
+  }
+  else 
+  {
+    printf("skip time\n");
   }
 
   this->dataPtr->lastControllerUpdateTime = curTime;
@@ -865,6 +875,17 @@ void ArduPilotPlugin::ResetPIDs()
   {
     this->dataPtr->controls[i].cmd = 0;
     // this->dataPtr->controls[i].pid.Reset();
+  }
+}
+
+
+void *ArduPilotPlugin::pwm_worker( void *ptr )
+{
+  printf("THREAD STARTED\n");
+  ArduPilotPlugin* plugin = (ArduPilotPlugin*) ptr;
+  while(true)
+  {
+    plugin->ReceiveMotorCommand();
   }
 }
 
@@ -897,6 +918,8 @@ bool ArduPilotPlugin::InitArduPilotSockets(sdf::ElementPtr _sdf) const
           << ":" << this->dataPtr->fdm_port_out << " aborting plugin.\n";
     return false;
   }
+
+  pthread_create( &this->dataPtr->pwm_thread, NULL, pwm_worker, (void*) this);
 
   return true;
 }
@@ -1003,6 +1026,10 @@ void ArduPilotPlugin::ReceiveMotorCommand()
     pkt = last_pkt;
     recvSize = recvSize_last;
   }
+  static int jj=0;
+  if(recvSize > 0)
+    printf("pkt(%lu, #%i) %f %f %f %f\n", recvSize, jj++, pkt.motorSpeed[0], pkt.motorSpeed[1], pkt.motorSpeed[2], pkt.motorSpeed[3]);
+
   if (counter > 0)
   {
     gzdbg << "[" << this->dataPtr->modelName << "] "
@@ -1103,6 +1130,8 @@ void ArduPilotPlugin::ReceiveMotorCommand()
 /////////////////////////////////////////////////
 void ArduPilotPlugin::SendState() const
 {
+  static int i=0;
+  //printf("SendState #%i\n", i++);
   // send_fdm
   fdmPacket pkt;
 
