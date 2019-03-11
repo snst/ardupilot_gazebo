@@ -60,6 +60,7 @@ struct ServoPacket
   /// \brief Motor speed data.
   /// should rename to servo_command here and in ArduPilot SIM_Gazebo.cpp
   float motorSpeed[MAX_MOTORS] = {0.0f};
+  uint32_t flags;
 };
 
 /// \brief Flight Dynamics Model packet that is sent back to the ArduPilot
@@ -1028,7 +1029,26 @@ void ArduPilotPlugin::ReceiveMotorCommand()
   }
   static int jj=0;
   if(recvSize > 0)
-    printf("pkt(%lu, #%i) %f %f %f %f\n", recvSize, jj++, pkt.motorSpeed[0], pkt.motorSpeed[1], pkt.motorSpeed[2], pkt.motorSpeed[3]);
+    printf("pkt(%lu, #%i) %f %f %f %f %u\n", recvSize, jj++, pkt.motorSpeed[0], pkt.motorSpeed[1], pkt.motorSpeed[2], pkt.motorSpeed[3], pkt.flags);
+
+  if(pkt.flags > 0) 
+  {
+    printf("RESET!!\n");
+    this->ResetPIDs();
+      // Send reset world message
+    transport::NodePtr node = transport::NodePtr(new transport::Node());
+    node->Init();
+
+    // Send reset world message
+    transport::PublisherPtr worldControlPub =
+      node->Advertise<msgs::WorldControl>("~/world_control");
+
+    // Copied from MainWindow::OnResetWorld
+    msgs::WorldControl msg;
+    msg.mutable_reset()->set_all(true);
+    worldControlPub->Publish(msg);
+
+  }
 
   if (counter > 0)
   {
@@ -1130,7 +1150,7 @@ void ArduPilotPlugin::ReceiveMotorCommand()
 /////////////////////////////////////////////////
 void ArduPilotPlugin::SendState() const
 {
-  static int i=0;
+  //static int i=0;
   //printf("SendState #%i\n", i++);
   // send_fdm
   fdmPacket pkt;
