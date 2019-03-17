@@ -124,24 +124,31 @@ include_directories(
         ${PROJECT_SOURCE_DIR}
         include
         ${GAZEBO_INCLUDE_DIRS}
+        /opt/ros/melodic/include
         )
 
 link_libraries(
         ${GAZEBO_LIBRARIES}
+        roscpp
         )
 
 link_directories(
         ${GAZEBO_LIBRARY_DIRS}
+        /opt/ros/melodic/lib
         )
 
 set (plugins_single_header
         ArduPilotPlugin
         ArduCopterIRLockPlugin
         GimbalSmall2dPlugin
+        NazeSonarPlugin
         )
 
 add_library(ArduCopterIRLockPlugin SHARED src/ArduCopterIRLockPlugin.cc)
 target_link_libraries(ArduCopterIRLockPlugin ${GAZEBO_LIBRARIES})
+
+add_library(NazeSonarPlugin SHARED src/NazeSonarPlugin.cc)
+target_link_libraries(NazeSonarPlugin ${GAZEBO_LIBRARIES})
 
 add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
 target_link_libraries(ArduPilotPlugin ${GAZEBO_LIBRARIES})
@@ -153,6 +160,7 @@ if("${GAZEBO_VERSION}" VERSION_LESS "8.0")
 endif()
 
 install(TARGETS ArduCopterIRLockPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+install(TARGETS NazeSonarPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 install(TARGETS ArduPilotPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 
 install(DIRECTORY models DESTINATION ${GAZEBO_MODEL_PATH}/..)

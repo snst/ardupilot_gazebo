@@ -20,6 +20,8 @@
 #include <sdf/sdf.hh>
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
+#include <ros/ros.h>
+
 
 namespace gazebo
 {
@@ -93,6 +95,8 @@ namespace gazebo
 
     /// \brief transform from world frame to NED frame
     private: ignition::math::Pose3d gazeboXYZToNED;
+
+    void timerCallback(const ros::TimerEvent& event);
   };
 }
 #endif

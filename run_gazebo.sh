@@ -1,0 +1,1 @@
+gazebo --verbose -s libgazebo_ros_api_plugin.so /usr/share/gazebo-9/worlds/naze.world 

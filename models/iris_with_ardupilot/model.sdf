@@ -382,6 +382,7 @@
     -->
 
     <!-- plugins -->
+
     <plugin name="rotor_0_blade_1" filename="libLiftDragPlugin.so">
       <a0>0.3</a0>
       <alpha_stall>1.4</alpha_stall>

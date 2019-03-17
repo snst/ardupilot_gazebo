@@ -48,6 +48,8 @@
 #include <gazebo/sensors/sensors.hh>
 #include <gazebo/transport/transport.hh>
 #include "include/ArduPilotPlugin.hh"
+#include "sensor_msgs/Range.h"
+
 
 #define MAX_MOTORS 4
 
@@ -417,6 +419,9 @@ class gazebo::ArduPilotPluginPrivate
   /// \brief Pointer to an Rangefinder sensor
   public: sensors::RaySensorPtr rangefinderSensor;
 
+  public: sensors::SonarSensorPtr sonarSensor;
+
+
   /// \brief false before ardupilot controller is online
   /// to allow gazebo to continue without waiting
   public: bool arduPilotOnline;
@@ -430,6 +435,9 @@ class gazebo::ArduPilotPluginPrivate
 
   public: pthread_t pwm_thread;
 
+  ros::NodeHandlePtr nh;
+  ros::Timer timer;
+  ros::Publisher sonar_pub;
 };
 
 /////////////////////////////////////////////////
@@ -445,6 +453,19 @@ ArduPilotPlugin::~ArduPilotPlugin()
 {
 }
 
+void ArduPilotPlugin::timerCallback(const ros::TimerEvent& event)
+{
+    gzmsg << "timercallback sonar! " << dataPtr->sonarSensor->Range() << "\n";
+
+    sensor_msgs::Range msg;
+    msg.min_range = dataPtr->sonarSensor->RangeMin();
+    msg.max_range = dataPtr->sonarSensor->RangeMax();
+    msg.range = dataPtr->sonarSensor->Range();
+    ROS_INFO("%f", msg.range);
+    dataPtr->sonar_pub.publish(msg);
+
+}
+
 /////////////////////////////////////////////////
 void ArduPilotPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 {
@@ -453,6 +474,8 @@ void ArduPilotPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 
   this->dataPtr->model = _model;
   this->dataPtr->modelName = this->dataPtr->model->GetName();
+
+  gzmsg << "modelName: " << this->dataPtr->modelName << "\n";
 
   // modelXYZToAirplaneXForwardZDown brings us from gazebo model frame:
   // x-forward, y-left, z-up
@@ -698,6 +721,34 @@ void ArduPilotPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     this->dataPtr->controls.push_back(control);
     controlSDF = controlSDF->GetNextElement("control");
   }
+
+  //+++++++++++++++++++++++++++++++++++
+  std::string sonarName = "iris_demo::iris::base_link::sonar";
+  std::vector<std::string> sonarScopedName = getSensorScopedName(this->dataPtr->model, sonarName);
+  gzmsg << "sonarScopedName: " << sonarScopedName.size() << "\n";
+
+  if (sonarScopedName.size() > 0)
+  {
+    gzmsg << "sonarScopedName[0]: " << sonarScopedName[0] << "\n";
+    this->dataPtr->sonarSensor = std::dynamic_pointer_cast<sensors::SonarSensor>
+      (sensors::SensorManager::Instance()->GetSensor(sonarScopedName[0]));
+  }
+
+  gzmsg << "Found sonar: " << ((nullptr != this->dataPtr->sonarSensor) ? "yes" : "no") << "\n";
+
+  if (!this->dataPtr->sonarSensor)
+  {
+    gzmsg << "NOOO sonar :(\n";
+  }
+
+  this->dataPtr->nh = boost::make_shared<ros::NodeHandle>();
+  this->dataPtr->sonar_pub = this->dataPtr->nh->advertise<sensor_msgs::Range>("naze_sonar", 1000);
+  gzmsg << "nach nh\n";
+  this->dataPtr->timer = this->dataPtr->nh->createTimer(ros::Duration(1), &ArduPilotPlugin::timerCallback, this);
+
+
+
+  //--------------------------------------
 
   // Get sensors
   std::string imuName;
@@ -952,7 +1003,7 @@ void ArduPilotPlugin::ResetPIDs()
 
 void *ArduPilotPlugin::pwm_worker( void *ptr )
 {
-  printf("THREAD STARTED\n");
+  printf("THREAD STARTED2\n");
   ArduPilotPlugin* plugin = (ArduPilotPlugin*) ptr;
   while(true)
   {
@@ -1099,8 +1150,8 @@ void ArduPilotPlugin::ReceiveMotorCommand()
     recvSize = recvSize_last;
   }
   static int jj=0;
-  if(recvSize > 0)
-    printf("pkt(%lu, #%i) %f %f %f %f %u\n", recvSize, jj++, pkt.motorSpeed[0], pkt.motorSpeed[1], pkt.motorSpeed[2], pkt.motorSpeed[3], pkt.flags);
+  //if(recvSize > 0)
+    //printf("pkt(%lu, #%i) %f %f %f %f %u\n", recvSize, jj++, pkt.motorSpeed[0], pkt.motorSpeed[1], pkt.motorSpeed[2], pkt.motorSpeed[3], pkt.flags);
 
   if(pkt.flags > 0) 
   {
