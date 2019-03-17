@@ -4,7 +4,7 @@
     <pose>0 0 0.194923 0 0 0</pose>
     <link name='base_link'>
 
-      <sensor name="sonar" type="sonar">
+      <sensor name='sonar' type='sonar'>
         <pose frame=''>0 0 0 0 0 0</pose>
           <sonar>
             <min>0</min>
@@ -14,60 +14,7 @@
           <always_on>1</always_on>
           <update_rate>30</update_rate>
           <visualize>1</visualize>
-          <plugin name="NazeSonarPlugin" filename="/usr/lib/x86_64-linux-gnu/gazebo-9/plugins/libNazeSonarPlugin.so_">
-          </plugin>
         </sensor> 
-
-
-
-        <sensor name="gps" type="gps">
-          <pose>0 0 0  0 0 0</pose>
-          <update_rate>10.0</update_rate>
-          <always_on>true</always_on>
-          <gps>
-            <position_sensing>
-              <horizontal>
-                <noise type="gaussian_quantized">
-                  <mean>0</mean>
-                  <stddev>0.1</stddev>
-                  <bias_mean>0.1</bias_mean>
-                  <bias_stddev>0.1</bias_stddev>
-                  <precision>0.1</precision>
-                </noise>
-              </horizontal>
-              <vertical>
-                <noise type="gaussian_quantized">
-                  <mean>0</mean>
-                  <stddev>1</stddev>
-                  <bias_mean>3</bias_mean>
-                  <bias_stddev>1</bias_stddev>
-                  <precision>1.0</precision>
-                </noise>
-              </vertical>
-            </position_sensing>
-            <velocity_sensing>
-              <horizontal>
-                <noise type="gaussian_quantized">
-                  <mean>0</mean>
-                  <stddev>0.1</stddev>
-                  <bias_mean>0.1</bias_mean>
-                  <bias_stddev>0.1</bias_stddev>
-                  <precision>0.1</precision>
-                </noise>
-              </horizontal>
-              <vertical>
-                <noise type="gaussian_quantized">
-                  <mean>0</mean>
-                  <stddev>0.2</stddev>
-                  <bias_mean>0.2</bias_mean>
-                  <bias_stddev>0.2</bias_stddev>
-                  <precision>0.2</precision>
-                </noise>
-              </vertical>
-            </velocity_sensing>
-          </gps>
-        </sensor>
-
 
       <velocity_decay>
         <linear>0.0</linear>

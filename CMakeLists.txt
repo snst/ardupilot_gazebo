@@ -142,6 +142,7 @@ set (plugins_single_header
         ArduCopterIRLockPlugin
         GimbalSmall2dPlugin
         NazeSonarPlugin
+        NazePlugin
         )
 
 add_library(ArduCopterIRLockPlugin SHARED src/ArduCopterIRLockPlugin.cc)
@@ -153,6 +154,9 @@ target_link_libraries(NazeSonarPlugin ${GAZEBO_LIBRARIES})
 add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
 target_link_libraries(ArduPilotPlugin ${GAZEBO_LIBRARIES})
 
+add_library(NazePlugin SHARED src/NazePlugin.cc)
+target_link_libraries(NazePlugin ${GAZEBO_LIBRARIES})
+
 if("${GAZEBO_VERSION}" VERSION_LESS "8.0")
     add_library(GimbalSmall2dPlugin SHARED src/GimbalSmall2dPlugin.cc)
     target_link_libraries(GimbalSmall2dPlugin ${GAZEBO_LIBRARIES})
@@ -162,6 +166,7 @@ endif()
 install(TARGETS ArduCopterIRLockPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 install(TARGETS NazeSonarPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 install(TARGETS ArduPilotPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+install(TARGETS NazePlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 
 install(DIRECTORY models DESTINATION ${GAZEBO_MODEL_PATH}/..)
 install(DIRECTORY worlds DESTINATION ${GAZEBO_MODEL_PATH}/..)
