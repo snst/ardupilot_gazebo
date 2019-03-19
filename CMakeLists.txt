@@ -154,7 +154,7 @@ target_link_libraries(NazeSonarPlugin ${GAZEBO_LIBRARIES})
 add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
 target_link_libraries(ArduPilotPlugin ${GAZEBO_LIBRARIES})
 
-add_library(NazePlugin SHARED src/NazePlugin.cc)
+add_library(NazePlugin SHARED NazePlugin/src/NazePlugin.cc NazePlugin/src/RotorControl.cc)
 target_link_libraries(NazePlugin ${GAZEBO_LIBRARIES})
 
 if("${GAZEBO_VERSION}" VERSION_LESS "8.0")
