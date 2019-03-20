@@ -11,6 +11,9 @@
 #include <gazebo/transport/transport.hh>
 #include "NazePlugin.hh"
 #include "sensor_msgs/Range.h"
+#include "sensor_msgs/Imu.h"
+#include "geometry_msgs/Vector3.h"
+#include "std_msgs/Float64.h"
 #include "sdfHelper.hh"
 #include "RotorControl.hh"
 #include "ArduPilotSocket.hh"
@@ -40,17 +43,19 @@ class gazebo::NazePluginPrivate
 
     sensors::GpsSensorPtr gps_sensor_;
 
-    //    sensors::RaySensorPtr rangefinderSensor;
-
     sensors::SonarSensorPtr sonar_sensor_;
 
-    pthread_t motor_thread_;
 
     ros::NodeHandlePtr nh_;
+
     ros::Subscriber motor_sub_;
 
     ros::Timer timer_;
+
     ros::Publisher sonar_pub_;
+    ros::Publisher imu_pub_;
+    ros::Publisher pos_pub_;
+    ros::Publisher simtime_pub_;
 
     ::ArduPilotSocket socket_out_;
 };
@@ -389,6 +394,12 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     //    this->data_->sonar_pub_ = this->data_->nh_->advertise<sensor_msgs::Range>("naze_sonar", 1000);
     //    this->data_->timer_ = this->data_->nh_->createTimer(ros::Duration(1), &NazePlugin::TimerCallback, this);
 
+    this->data_->imu_pub_ = this->data_->nh_->advertise<sensor_msgs::Imu>("naze_imu", 1000);
+    this->data_->pos_pub_ = this->data_->nh_->advertise<geometry_msgs::Vector3>("naze_pos", 1000);
+    this->data_->simtime_pub_ = this->data_->nh_->advertise<geometry_msgs::Vector3>("naze_time", 1000);
+
+    
+
     gzmsg << "subscribe motor_data\n";
 
     ros::SubscribeOptions jointStatesSo = ros::SubscribeOptions::create<naze::MotorControl>(
@@ -675,7 +686,34 @@ void NazePlugin::SendState() const
   // airspeed :     wind = Vector3(environment.wind.x, environment.wind.y, environment.wind.z)
    // pkt.airspeed = (pkt.velocity - wind).length()
 */
-    this->data_->socket_out_.Send(&pkt, sizeof(pkt));
+ //   this->data_->socket_out_.Send(&pkt, sizeof(pkt));
+
+    sensor_msgs::Imu im;
+    im.orientation.w = NEDToModelXForwardZUp.Rot().W();
+    im.orientation.x = NEDToModelXForwardZUp.Rot().X();
+    im.orientation.y = NEDToModelXForwardZUp.Rot().Y();
+    im.orientation.z = NEDToModelXForwardZUp.Rot().Z();
+
+    im.angular_velocity.x = angularVel.X();
+    im.angular_velocity.y = angularVel.Y();
+    im.angular_velocity.z = angularVel.Z();
+
+    im.linear_acceleration.x = linearAccel.X();
+    im.linear_acceleration.y = linearAccel.Y();
+    im.linear_acceleration.z = linearAccel.Z();
+
+    geometry_msgs::Vector3 pv;
+    pv.x = NEDToModelXForwardZUp.Pos().X();
+    pv.y = NEDToModelXForwardZUp.Pos().Y();
+    pv.z = NEDToModelXForwardZUp.Pos().Z();
+    
+
+    std_msgs::Float64 st;
+    st.data = pkt.timestamp;
+
+    this->data_->imu_pub_.publish(im);
+    this->data_->pos_pub_.publish(pv);
+    this->data_->simtime_pub_.publish(st);
 }
 
 void NazePlugin::ResetPIDs()
