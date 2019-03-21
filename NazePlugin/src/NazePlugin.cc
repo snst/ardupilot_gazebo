@@ -396,7 +396,7 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
     this->data_->imu_pub_ = this->data_->nh_->advertise<sensor_msgs::Imu>("naze_imu", 1000);
     this->data_->pos_pub_ = this->data_->nh_->advertise<geometry_msgs::Vector3>("naze_pos", 1000);
-    this->data_->simtime_pub_ = this->data_->nh_->advertise<geometry_msgs::Vector3>("naze_time", 1000);
+    this->data_->simtime_pub_ = this->data_->nh_->advertise<std_msgs::Float64>("naze_time", 1000);
 
     
 
@@ -409,11 +409,11 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     jointStatesSo.transport_hints = ros::TransportHints().unreliable();
 
     this->data_->motor_sub_ = this->data_->nh_->subscribe(jointStatesSo);
-
+/*
     if (!InitArduPilotSockets(sdf))
     {
         return;
-    }
+    }*/
 
     this->data_->update_connection_ = event::Events::ConnectWorldUpdateBegin(
         std::bind(&NazePlugin::OnUpdate, this));
@@ -446,7 +446,7 @@ void NazePlugin::OnUpdate()
     this->data_->last_controller_update_time_ = cur_time;
 }
 
-
+/*
 bool NazePlugin::InitArduPilotSockets(sdf::ElementPtr _sdf) const
 {
     std::string fdm_addr = "127.0.0.1";
@@ -462,7 +462,7 @@ bool NazePlugin::InitArduPilotSockets(sdf::ElementPtr _sdf) const
     }
 
     return true;
-}
+}*/
 
 /////////////////////////////////////////////////
 void NazePlugin::ApplyMotorForces(const double _dt)
@@ -571,6 +571,7 @@ void NazePlugin::ReceiveMotorCommand(const naze::MotorControl::ConstPtr &msg)
 
 void NazePlugin::SendState() const
 {
+    //gzmsg << "SendState!!!\n";
     fdmPacket pkt;
 
     pkt.timestamp = this->data_->model_->GetWorld()->SimTime().Double();
@@ -722,6 +723,6 @@ void NazePlugin::ResetPIDs()
     for (size_t i = 0; i < this->data_->controls_.size(); ++i)
     {
         this->data_->controls_[i].cmd = 0;
-        // this->data_->controls[i].pid.Reset();
+        this->data_->controls_[i].pid.Reset();
     }
 }

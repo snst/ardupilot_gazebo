@@ -151,8 +151,8 @@ target_link_libraries(ArduCopterIRLockPlugin ${GAZEBO_LIBRARIES})
 add_library(NazeSonarPlugin SHARED src/NazeSonarPlugin.cc)
 target_link_libraries(NazeSonarPlugin ${GAZEBO_LIBRARIES})
 
-add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
-target_link_libraries(ArduPilotPlugin ${GAZEBO_LIBRARIES})
+#add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
+#target_link_libraries(ArduPilotPlugin ${GAZEBO_LIBRARIES})
 
 add_library(NazePlugin SHARED NazePlugin/src/NazePlugin.cc NazePlugin/src/RotorControl.cc)
 target_link_libraries(NazePlugin ${GAZEBO_LIBRARIES})
@@ -165,7 +165,7 @@ endif()
 
 install(TARGETS ArduCopterIRLockPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 install(TARGETS NazeSonarPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
-install(TARGETS ArduPilotPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+#install(TARGETS ArduPilotPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 install(TARGETS NazePlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 
 install(DIRECTORY models DESTINATION ${GAZEBO_MODEL_PATH}/..)

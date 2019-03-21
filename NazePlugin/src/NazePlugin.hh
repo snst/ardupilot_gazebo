@@ -48,7 +48,7 @@ private:
   void SendState() const;
 
   /// \brief Init ardupilot socket
-  bool InitArduPilotSockets(sdf::ElementPtr _sdf) const;
+  //bool InitArduPilotSockets(sdf::ElementPtr _sdf) const;
 
   void ApplyMotorForces(const double dt);
   void ResetPIDs();
