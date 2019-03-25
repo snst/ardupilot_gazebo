@@ -36,11 +36,16 @@ private:
 
   void TimerCallback(const ros::TimerEvent &event);
 
-  void SendSonarState();
+  void SendSonarState() const;
 
   sensors::SonarSensorPtr LoadSonar(std::string const &name);
 
   sensors::ImuSensorPtr LoadImu(std::string const &name);
+
+  void SendGpsState() const;
+
+  sensors::GpsSensorPtr LoadGps(std::string const &name);
+
 
   void OnUpdate();
 

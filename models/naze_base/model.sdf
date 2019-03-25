@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
   <model name='iris'>
-    <pose>0 0 0.194923 0 0 0</pose>
+    <pose>0 0 0.194923 0 0 1.6</pose>
     <link name='base_link'>
 
       <sensor name='sonar' type='sonar'>
@@ -15,6 +15,11 @@
           <update_rate>30</update_rate>
           <visualize>1</visualize>
         </sensor> 
+
+      <sensor name="gps" type="gps">
+        <always_on>1</always_on>
+        <update_rate>5</update_rate>
+      </sensor>
 
       <velocity_decay>
         <linear>0.0</linear>

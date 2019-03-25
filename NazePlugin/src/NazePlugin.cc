@@ -12,6 +12,7 @@
 #include "NazePlugin.hh"
 #include "sensor_msgs/Range.h"
 #include "sensor_msgs/Imu.h"
+#include "sensor_msgs/NavSatFix.h"
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/Float64.h"
 #include "sdfHelper.hh"
@@ -45,7 +46,6 @@ class gazebo::NazePluginPrivate
 
     sensors::SonarSensorPtr sonar_sensor_;
 
-
     ros::NodeHandlePtr nh_;
 
     ros::Subscriber motor_sub_;
@@ -56,6 +56,7 @@ class gazebo::NazePluginPrivate
     ros::Publisher imu_pub_;
     ros::Publisher pos_pub_;
     ros::Publisher simtime_pub_;
+    ros::Publisher gps_pub_;
 
     ::ArduPilotSocket socket_out_;
 };
@@ -74,16 +75,84 @@ NazePlugin::~NazePlugin()
 {
 }
 
-void NazePlugin::SendSonarState()
+void NazePlugin::SendSonarState() const
 {
-    gzmsg << "SendSonarState:" << data_->sonar_sensor_->Range() << "\n";
+    //gzmsg << "SendSonarState:" << data_->sonar_sensor_->Range() << "\n";
     sensor_msgs::Range msg;
     msg.min_range = data_->sonar_sensor_->RangeMin();
     msg.max_range = data_->sonar_sensor_->RangeMax();
     msg.range = data_->sonar_sensor_->Range();
-    ROS_INFO("%f", msg.range);
+    //ROS_INFO("%f", msg.range);
     data_->sonar_pub_.publish(msg);
 }
+
+// WGS84 constants
+static const double equatorial_radius = 6378137.0;
+static const double flattening = 1.0/298.257223563;
+static const double excentrity2 = 2*flattening - flattening*flattening;
+
+// 49.482097,11.0880847
+// 49.482098,11.0885358
+// default reference position
+//49.48696,11.1249838
+static const double DEFAULT_REFERENCE_LATITUDE  = 49.48696;
+static const double DEFAULT_REFERENCE_LONGITUDE = 11.1249838;
+static const double DEFAULT_REFERENCE_HEADING   = 0.0;
+static const double DEFAULT_REFERENCE_ALTITUDE  = 0.0;
+
+void NazePlugin::SendGpsState() const
+{
+    double reference_latitude_ = DEFAULT_REFERENCE_LATITUDE;
+    double reference_longitude_ = DEFAULT_REFERENCE_LONGITUDE;
+    double reference_altitude_ = DEFAULT_REFERENCE_ALTITUDE;
+    double reference_heading_ = DEFAULT_REFERENCE_HEADING;
+    sensor_msgs::NavSatFix fix;
+
+  double temp = 1.0 / (1.0 - excentrity2 * sin(reference_latitude_ * M_PI/180.0) * sin(reference_latitude_ * M_PI/180.0));
+  double prime_vertical_radius = equatorial_radius * sqrt(temp);
+  double radius_north_ = prime_vertical_radius * (1 - excentrity2) * temp;
+  double radius_east_  = prime_vertical_radius * cos(reference_latitude_ * M_PI/180.0);
+
+
+    double alt = data_->gps_sensor_->Altitude();
+    double lon = data_->gps_sensor_->Longitude().Degree();
+    double lat = data_->gps_sensor_->Latitude().Degree();
+
+    //fix.header.stamp = ros::Time(sim_time.sec, sim_time.nsec);
+  //velocity_.header.stamp = fix_.header.stamp;
+
+//  fix.latitude  = reference_latitude_  + ( cos(reference_heading_) * position.X() + sin(reference_heading_) * position.Y()) / radius_north_ * 180.0/M_PI;
+//  fix.longitude = reference_longitude_ - (-sin(reference_heading_) * position.X() + cos(reference_heading_) * position.Y()) / radius_east_  * 180.0/M_PI;
+//  fix.altitude  = reference_altitude_  + position.Z();
+
+  fix.latitude  = reference_latitude_  - lat;
+  fix.longitude = reference_longitude_ - lon;
+  fix.altitude  = reference_altitude_  + alt;
+  fix.status.status = sensor_msgs::NavSatStatus::STATUS_FIX;
+  
+
+      data_->gps_pub_.publish(fix);
+
+
+//    printf("gps alt=%f, lon=%f, lat=%f // lon=%f, lat=%f \n", alt, lon, lat, fix.latitude, fix.longitude);
+}
+
+sensors::GpsSensorPtr NazePlugin::LoadGps(std::string const &name)
+{
+    sensors::GpsSensorPtr sensor;
+    std::vector<std::string> scoped_name = getSensorScopedName(this->data_->model_, name);
+
+    if (scoped_name.size() > 0)
+    {
+        gzmsg << "gps scoped_name[0/" << scoped_name.size() << "]: " << scoped_name[0] << "\n";
+        sensor = std::dynamic_pointer_cast<sensors::GpsSensor>(sensors::SensorManager::Instance()->GetSensor(scoped_name[0]));
+    }
+
+    bool ret = (nullptr != sensor);
+    gzmsg << "Found gps: " << ret << "\n";
+    return sensor;
+}
+
 
 void NazePlugin::TimerCallback(const ros::TimerEvent &event)
 {
@@ -390,15 +459,19 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
     this->data_->imu_sensor_ = LoadImu("iris_demo::iris::iris/imu_link::imu_sensor");
 
+    this->data_->gps_sensor_ = LoadGps("iris_demo::iris::base_link::gps");
+
     this->data_->nh_ = boost::make_shared<ros::NodeHandle>();
-    //    this->data_->sonar_pub_ = this->data_->nh_->advertise<sensor_msgs::Range>("naze_sonar", 1000);
+    this->data_->sonar_pub_ = this->data_->nh_->advertise<sensor_msgs::Range>("naze_sonar", 1000);
     //    this->data_->timer_ = this->data_->nh_->createTimer(ros::Duration(1), &NazePlugin::TimerCallback, this);
 
     this->data_->imu_pub_ = this->data_->nh_->advertise<sensor_msgs::Imu>("naze_imu", 1000);
     this->data_->pos_pub_ = this->data_->nh_->advertise<geometry_msgs::Vector3>("naze_pos", 1000);
     this->data_->simtime_pub_ = this->data_->nh_->advertise<std_msgs::Float64>("naze_time", 1000);
 
-    
+    this->data_->gps_pub_ = this->data_->nh_->advertise<sensor_msgs::NavSatFix>("gps_fix", 10);
+
+   
 
     gzmsg << "subscribe motor_data\n";
 
@@ -572,10 +645,11 @@ void NazePlugin::ReceiveMotorCommand(const naze::MotorControl::ConstPtr &msg)
 void NazePlugin::SendState() const
 {
     //gzmsg << "SendState!!!\n";
-    fdmPacket pkt;
+//    fdmPacket pkt;
 
-    pkt.timestamp = this->data_->model_->GetWorld()->SimTime().Double();
+//    pkt.timestamp = this->data_->model_->GetWorld()->SimTime().Double();
 
+    
     // asssumed that the imu orientation is:
     //   x forward
     //   y right
@@ -586,9 +660,9 @@ void NazePlugin::SendState() const
         this->data_->imu_sensor_->LinearAcceleration();
 
     // copy to pkt
-    pkt.imuLinearAccelerationXYZ[0] = linearAccel.X();
-    pkt.imuLinearAccelerationXYZ[1] = linearAccel.Y();
-    pkt.imuLinearAccelerationXYZ[2] = linearAccel.Z();
+//    pkt.imuLinearAccelerationXYZ[0] = linearAccel.X();
+//    pkt.imuLinearAccelerationXYZ[1] = linearAccel.Y();
+//    pkt.imuLinearAccelerationXYZ[2] = linearAccel.Z();
     // gzerr << "lin accel [" << linearAccel << "]\n";
 
     // get angular velocity in body frame
@@ -596,9 +670,9 @@ void NazePlugin::SendState() const
         this->data_->imu_sensor_->AngularVelocity();
 
     // copy to pkt
-    pkt.imuAngularVelocityRPY[0] = angularVel.X();
-    pkt.imuAngularVelocityRPY[1] = angularVel.Y();
-    pkt.imuAngularVelocityRPY[2] = angularVel.Z();
+ //   pkt.imuAngularVelocityRPY[0] = angularVel.X();
+ //   pkt.imuAngularVelocityRPY[1] = angularVel.Y();
+ //   pkt.imuAngularVelocityRPY[2] = angularVel.Z();
 
     // get inertial pose and velocity
     // position of the uav in world frame
@@ -633,20 +707,20 @@ void NazePlugin::SendState() const
     // gzerr << "ned to model [" << NEDToModelXForwardZUp << "]\n";
 
     // N
-    pkt.positionXYZ[0] = NEDToModelXForwardZUp.Pos().X();
+  //  pkt.positionXYZ[0] = NEDToModelXForwardZUp.Pos().X();
 
     // E
-    pkt.positionXYZ[1] = NEDToModelXForwardZUp.Pos().Y();
+ //   pkt.positionXYZ[1] = NEDToModelXForwardZUp.Pos().Y();
 
     // D
-    pkt.positionXYZ[2] = NEDToModelXForwardZUp.Pos().Z();
+  //  pkt.positionXYZ[2] = NEDToModelXForwardZUp.Pos().Z();
 
     // imuOrientationQuat is the rotation from world NED frame
     // to the uav frame.
-    pkt.imuOrientationQuat[0] = NEDToModelXForwardZUp.Rot().W();
-    pkt.imuOrientationQuat[1] = NEDToModelXForwardZUp.Rot().X();
-    pkt.imuOrientationQuat[2] = NEDToModelXForwardZUp.Rot().Y();
-    pkt.imuOrientationQuat[3] = NEDToModelXForwardZUp.Rot().Z();
+  //  pkt.imuOrientationQuat[0] = NEDToModelXForwardZUp.Rot().W();
+  //  pkt.imuOrientationQuat[1] = NEDToModelXForwardZUp.Rot().X();
+  //  pkt.imuOrientationQuat[2] = NEDToModelXForwardZUp.Rot().Y();
+  //  pkt.imuOrientationQuat[3] = NEDToModelXForwardZUp.Rot().Z();
 
     // gzdbg << "imu [" << gazeboXYZToModelXForwardZDown.rot.GetAsEuler()
     //       << "]\n";
@@ -660,9 +734,9 @@ void NazePlugin::SendState() const
         this->data_->model_->GetLink()->WorldLinearVel();
     const ignition::math::Vector3d velNEDFrame =
         this->gazeboXYZToNED_.Rot().RotateVectorReverse(velGazeboWorldFrame);
-    pkt.velocityXYZ[0] = velNEDFrame.X();
-    pkt.velocityXYZ[1] = velNEDFrame.Y();
-    pkt.velocityXYZ[2] = velNEDFrame.Z();
+  //  pkt.velocityXYZ[0] = velNEDFrame.X();
+  //  pkt.velocityXYZ[1] = velNEDFrame.Y();
+  //  pkt.velocityXYZ[2] = velNEDFrame.Z();
     /* NOT MERGED IN MASTER YET
   if (!this->data_->gpsSensor)
     {
@@ -710,11 +784,14 @@ void NazePlugin::SendState() const
     
 
     std_msgs::Float64 st;
-    st.data = pkt.timestamp;
+    st.data = this->data_->model_->GetWorld()->SimTime().Double();
+    
 
     this->data_->imu_pub_.publish(im);
     this->data_->pos_pub_.publish(pv);
     this->data_->simtime_pub_.publish(st);
+    SendSonarState();
+    SendGpsState();
 }
 
 void NazePlugin::ResetPIDs()

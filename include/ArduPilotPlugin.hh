@@ -83,7 +83,7 @@ namespace gazebo
     private: void SendState() const;
 
     /// \brief Init ardupilot socket
-    private: bool InitArduPilotSockets(sdf::ElementPtr _sdf) const;
+    //private: bool InitArduPilotSockets(sdf::ElementPtr _sdf) const;
 
     private: static void* pwm_worker( void *ptr );
 
