@@ -5,10 +5,14 @@
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
 #include <ros/ros.h>
-#include "../include/MotorControl.h"
+//#include "../include/MotorControl.h"
+#include "/home/stsc/work/ros_ws/sitl_ipc/include/sitl_ipc_sim.h"
+
 
 
 #define MAX_MOTORS 4
+
+//struct sitl_motor_t;
 
 namespace gazebo
 {
@@ -23,7 +27,7 @@ public:
 
   virtual void Load(physics::ModelPtr model, sdf::ElementPtr sdf);
 
-  void ReceiveMotorCommand(const naze::MotorControl::ConstPtr &msg);
+  void ReceiveMotorCommand(struct sitl_motor_t* msg);
   
 private:
   std::unique_ptr<NazePluginPrivate> data_;
@@ -47,7 +51,7 @@ private:
   sensors::GpsSensorPtr LoadGps(std::string const &name);
 
 
-  void OnUpdate();
+  void OnWorldUpdate();
 
   /// \brief Send state to ArduPilot
   void SendState() const;

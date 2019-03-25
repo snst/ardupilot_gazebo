@@ -95,3 +95,4 @@ cmake-build-debug
 
 # Catkin custom files
 CATKIN_IGNORE
+.vscode/ipch/*

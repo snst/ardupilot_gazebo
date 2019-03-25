@@ -130,11 +130,13 @@ include_directories(
 link_libraries(
         ${GAZEBO_LIBRARIES}
         roscpp
+        sitl_ipc_sim
         )
 
 link_directories(
         ${GAZEBO_LIBRARY_DIRS}
         /opt/ros/melodic/lib
+        /home/stsc/work/ros_ws/sitl_ipc/lib
         )
 
 set (plugins_single_header
@@ -145,11 +147,11 @@ set (plugins_single_header
         NazePlugin
         )
 
-add_library(ArduCopterIRLockPlugin SHARED src/ArduCopterIRLockPlugin.cc)
-target_link_libraries(ArduCopterIRLockPlugin ${GAZEBO_LIBRARIES})
+#add_library(ArduCopterIRLockPlugin SHARED src/ArduCopterIRLockPlugin.cc)
+#target_link_libraries(ArduCopterIRLockPlugin ${GAZEBO_LIBRARIES})
 
-add_library(NazeSonarPlugin SHARED src/NazeSonarPlugin.cc)
-target_link_libraries(NazeSonarPlugin ${GAZEBO_LIBRARIES})
+#add_library(NazeSonarPlugin SHARED src/NazeSonarPlugin.cc)
+#target_link_libraries(NazeSonarPlugin ${GAZEBO_LIBRARIES})
 
 #add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
 #target_link_libraries(ArduPilotPlugin ${GAZEBO_LIBRARIES})
@@ -158,13 +160,13 @@ add_library(NazePlugin SHARED NazePlugin/src/NazePlugin.cc NazePlugin/src/RotorC
 target_link_libraries(NazePlugin ${GAZEBO_LIBRARIES})
 
 if("${GAZEBO_VERSION}" VERSION_LESS "8.0")
-    add_library(GimbalSmall2dPlugin SHARED src/GimbalSmall2dPlugin.cc)
-    target_link_libraries(GimbalSmall2dPlugin ${GAZEBO_LIBRARIES})
-    install(TARGETS GimbalSmall2dPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+    #add_library(GimbalSmall2dPlugin SHARED src/GimbalSmall2dPlugin.cc)
+    #target_link_libraries(GimbalSmall2dPlugin ${GAZEBO_LIBRARIES})
+    #install(TARGETS GimbalSmall2dPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 endif()
 
-install(TARGETS ArduCopterIRLockPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
-install(TARGETS NazeSonarPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+#install(TARGETS ArduCopterIRLockPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+#install(TARGETS NazeSonarPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 #install(TARGETS ArduPilotPlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 install(TARGETS NazePlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
 
