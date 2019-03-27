@@ -28,6 +28,7 @@ public:
   virtual void Load(physics::ModelPtr model, sdf::ElementPtr sdf);
 
   void ReceiveMotorCommand(struct sitl_motor_t* msg);
+  void ResetWorld();
   
 private:
   std::unique_ptr<NazePluginPrivate> data_;

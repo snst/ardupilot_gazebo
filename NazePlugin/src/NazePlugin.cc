@@ -54,11 +54,11 @@ NazePlugin::~NazePlugin()
 
 void NazePlugin::SendSonarState() const
 {
-    struct sitl_sonar_t data;
-    data.distance = data_->sonar_sensor_->Range();
+    struct sitl_sonar_t msg;
+    msg.distance = data_->sonar_sensor_->Range();
 //    msg.min_range = data_->sonar_sensor_->RangeMin();
 //    msg.max_range = data_->sonar_sensor_->RangeMax();
-    sitl_set_sonar(&data);
+    sitl_set_sonar(&msg);
 }
 
 // WGS84 constants
@@ -402,6 +402,12 @@ static void update_motor(void* param, struct sitl_motor_t * msg)
     plugin->ReceiveMotorCommand(msg);
 }
 
+/*
+    void sitl_register_motor_callback2(const boost::function<void(const boost::shared_ptr<M const> &)> &callback)
+    {
+        
+    }
+    */
 void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 {
     this->data_->model_ = model;
@@ -419,7 +425,9 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
     sitl_start_ipc();    
 
-    sitl_register_motor_callback(this, &update_motor);
+    //sitl_register_motor_callback(this, &update_motor);
+    sitl_register_motor_callback2(boost::bind(&NazePlugin::ReceiveMotorCommand, this, _1));
+    sitl_register_reset_world_callback(boost::bind(&NazePlugin::ResetWorld, this));
 
     gzmsg << "subscribe motor_data\n";
 
@@ -522,16 +530,8 @@ void NazePlugin::ApplyMotorForces(const double _dt)
     }
 }
 
-/////////////////////////////////////////////////
-void NazePlugin::ReceiveMotorCommand(struct sitl_motor_t* msg)
+void NazePlugin::ResetWorld()
 {
-    //gzmsg << "ReceiveMotorCommand!\n";
-
-    float pkt[] = {msg->motor[0], msg->motor[1],msg->motor[2],msg->motor[3]};
-
-/*
-    if (msg->flags > 0)
-    {
         printf("RESET!!\n");
         this->ResetPIDs();
         // Send reset world message
@@ -546,7 +546,14 @@ void NazePlugin::ReceiveMotorCommand(struct sitl_motor_t* msg)
         msgs::WorldControl msg;
         msg.mutable_reset()->set_all(true);
         worldControlPub->Publish(msg);
-    }*/
+}
+
+/////////////////////////////////////////////////
+void NazePlugin::ReceiveMotorCommand(struct sitl_motor_t* msg)
+{
+    //gzmsg << "ReceiveMotorCommand!\n";
+
+    float pkt[] = {msg->motor[0], msg->motor[1],msg->motor[2],msg->motor[3]};
 
     const ssize_t recvChannels = 4;
 
