@@ -33,7 +33,7 @@ bool getSdfParam(sdf::ElementPtr _sdf, const std::string &_name,
 }
 
 // DON'T MERGE
-std::vector<std::string> getSensorScopedName(physics::ModelPtr _model,
+static std::vector<std::string> getSensorScopedName(physics::ModelPtr _model,
           const std::string &_name)
 {
   std::vector<std::string> names;
