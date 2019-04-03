@@ -27,8 +27,8 @@ public:
 
   virtual void Load(physics::ModelPtr model, sdf::ElementPtr sdf);
 
-  void ReceiveMotorCommand(struct sitl_motor_t* msg);
-  void ResetWorld();
+  void HandleMotorCommand(struct sitl_motor_t* msg);
+  void HandleResetWorld();
   
 private:
   std::unique_ptr<NazePluginPrivate> data_;
@@ -55,7 +55,7 @@ private:
   void OnWorldUpdate();
 
   /// \brief Send state to ArduPilot
-  void SendState() const;
+  void SendImuState() const;
 
   /// \brief Init ardupilot socket
   //bool InitArduPilotSockets(sdf::ElementPtr _sdf) const;

@@ -69,16 +69,6 @@
       </link>
     </model>
 
-
-<!--
-<plugin name="map" filename="libStaticMapPlugin.so">
-      <center>49.4851909 - 11.0910898</center>
-      <world_size>100</world_size>
-      <map_type>satellite</map_type>
-      <api_key>AIzaSyCHrBzkMIol9majTbnKr_L3_EXjF1TT0ts</api_key>
-      <use_cache>false</use_cache>
-    </plugin>
--->
     <model name="naze_demo">
       <include>
         <uri>model://naze</uri>
