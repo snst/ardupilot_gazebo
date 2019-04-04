@@ -4,13 +4,47 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        { 
+            "name": "(gdb) Attach",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "/usr/bin/gzserver",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
         {
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "/usr/bin/gazebo",
-            "args": ["/usr/share/gazebo-9/worlds/naze.world"],
-            "stopAtEntry": false,
+            "args": ["-s libgazebo_ros_api_plugin.so", "/usr/share/gazebo-9/worlds/naze.world"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Launch2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/usr/bin/gzserver",
+            "args": ["-s libgazebo_ros_api_plugin.so", "/usr/share/gazebo-9/worlds/naze.world"],
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,

@@ -44,6 +44,7 @@ class gazebo::NazePluginPrivate
 
     std::mutex mutex_;
     bool is_online_;
+    
     naze::Imu imu_;
     naze::Sonar sonar_; 
     naze::Gps gps_;
@@ -54,6 +55,16 @@ NazePlugin::NazePlugin()
 {
     data_->is_online_ = false;
     gzmsg << "starting NazePlugin..\n";
+    int i=0;
+    while(i>0)
+    {
+        sleep(1);
+        i--;
+    }
+    //raise(SIGTRAP);
+    //__builtin_trap();
+    //raise(SIGABRT);
+
 }
 
 NazePlugin::~NazePlugin()
@@ -76,7 +87,7 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
     {
         controlSDF = sdf->GetElement("control");
     }
-    else if (sdf->HasElement("rotor"))
+    else if (sdf->HasElement("rotor")) // stsc remove
     {
         gzwarn << "[" << this->data_->model_name_ << "] "
                << "please deprecate <rotor> block, use <control> block instead.\n";
@@ -89,7 +100,7 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 
         if (controlSDF->HasAttribute("channel"))
         {
-            control.channel =
+            control.channel = // stsc +
                 atoi(controlSDF->GetAttribute("channel")->GetAsString().c_str());
         }
         else if (controlSDF->HasAttribute("id"))
@@ -109,7 +120,7 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 
         if (controlSDF->HasElement("type"))
         {
-            control.type = controlSDF->Get<std::string>("type");
+            control.type = controlSDF->Get<std::string>("type"); // stsc +
         }
         else
         {
@@ -132,12 +143,12 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 
         if (controlSDF->HasElement("useForce"))
         {
-            control.useForce = controlSDF->Get<bool>("useForce");
+            control.useForce = controlSDF->Get<bool>("useForce"); // stsc -
         }
 
         if (controlSDF->HasElement("jointName"))
         {
-            control.jointName = controlSDF->Get<std::string>("jointName");
+            control.jointName = controlSDF->Get<std::string>("jointName"); // stsc +
         }
         else
         {
@@ -159,7 +170,7 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
         if (controlSDF->HasElement("multiplier"))
         {
             // overwrite turningDirection, deprecated.
-            control.multiplier = controlSDF->Get<double>("multiplier");
+            control.multiplier = controlSDF->Get<double>("multiplier"); // stsc +
         }
         else if (controlSDF->HasElement("turningDirection"))
         {
@@ -194,7 +205,7 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 
         if (controlSDF->HasElement("offset"))
         {
-            control.offset = controlSDF->Get<double>("offset");
+            control.offset = controlSDF->Get<double>("offset"); // stsc +
         }
         else
         {
@@ -305,13 +316,13 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
     gzmsg << "model_name: " << this->data_->model_name_ << std::endl;
 
-    LoadOrientation(sdf);
     LoadRotorControls(sdf);
 
-    //this->data_->sonar_sensor_ = LoadSonar("iris_demo::iris::base_link::sonar");
     this->data_->sonar_.Load(model, "iris_demo::iris::base_link::sonar");
     this->data_->imu_.Load(model, "iris_demo::iris::iris/imu_link::imu_sensor");
     this->data_->gps_.Load(model, "iris_demo::iris::base_link::gps");
+
+    this->data_->imu_.LoadOrientation(sdf);
 
     sitl_start_ipc();
 

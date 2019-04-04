@@ -17,7 +17,7 @@ bool Imu::Load(physics::ModelPtr model, std::string const &name)
     }
 
     bool ret = (nullptr != sensor_);
-    gzmsg << "Found sonar: " << ret << "\n";
+    gzmsg << "Found imu: " << ret << "\n";
     return ret;
 }
 
@@ -59,15 +59,15 @@ void Imu::SendState() const
         sensor_->AngularVelocity();
 
     const ignition::math::Pose3d gazeboXYZToModelXForwardZDown =
-        this->modelXYZToAirplaneXForwardZDown_ +
+        modelXYZToAirplaneXForwardZDown_ +
         model_->WorldPose();
 
     // get transform from world NED to Model frame
     const ignition::math::Pose3d NEDToModelXForwardZUp =
-        gazeboXYZToModelXForwardZDown - this->gazeboXYZToNED_;
+        gazeboXYZToModelXForwardZDown - gazeboXYZToNED_;
 
     const ignition::math::Vector3d velGazeboWorldFrame = model_->GetLink()->WorldLinearVel();
-    const ignition::math::Vector3d velNEDFrame = this->gazeboXYZToNED_.Rot().RotateVectorReverse(velGazeboWorldFrame);
+    const ignition::math::Vector3d velNEDFrame = gazeboXYZToNED_.Rot().RotateVectorReverse(velGazeboWorldFrame);
 
     struct sitl_imu_t imu;
     imu.orientation_quat_w = NEDToModelXForwardZUp.Rot().W();

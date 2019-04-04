@@ -29,7 +29,6 @@ private:
   void OnWorldUpdate();
   void ApplyMotorForces(const double dt);
   void ResetPIDs();
-  void LoadOrientation(sdf::ElementPtr sdf);
   void LoadRotorControls(sdf::ElementPtr sdf);
 };
 
