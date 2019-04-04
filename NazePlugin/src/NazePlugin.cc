@@ -44,9 +44,9 @@ class gazebo::NazePluginPrivate
 
     std::mutex mutex_;
     bool is_online_;
-    
+
     naze::Imu imu_;
-    naze::Sonar sonar_; 
+    naze::Sonar sonar_;
     naze::Gps gps_;
 };
 
@@ -55,8 +55,8 @@ NazePlugin::NazePlugin()
 {
     data_->is_online_ = false;
     gzmsg << "starting NazePlugin..\n";
-    int i=0;
-    while(i>0)
+    int i = 0;
+    while (i > 0)
     {
         sleep(1);
         i--;
@@ -64,20 +64,17 @@ NazePlugin::NazePlugin()
     //raise(SIGTRAP);
     //__builtin_trap();
     //raise(SIGABRT);
-
 }
 
 NazePlugin::~NazePlugin()
 {
 }
 
-
 void NazePlugin::TimerCallback(const ros::TimerEvent &event)
 {
     gzmsg << "TimerCallback called!\n";
     //SendSonarState();
 }
-
 
 void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 {
@@ -100,15 +97,7 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 
         if (controlSDF->HasAttribute("channel"))
         {
-            control.channel = // stsc +
-                atoi(controlSDF->GetAttribute("channel")->GetAsString().c_str());
-        }
-        else if (controlSDF->HasAttribute("id"))
-        {
-            gzwarn << "[" << this->data_->model_name_ << "] "
-                   << "please deprecate attribute id, use channel instead.\n";
-            control.channel =
-                atoi(controlSDF->GetAttribute("id")->GetAsString().c_str());
+            control.channel = atoi(controlSDF->GetAttribute("channel")->GetAsString().c_str());
         }
         else
         {
@@ -118,37 +107,11 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
                    << control.channel << "].\n";
         }
 
-        if (controlSDF->HasElement("type"))
-        {
-            control.type = controlSDF->Get<std::string>("type"); // stsc +
-        }
-        else
-        {
-            gzerr << "[" << this->data_->model_name_ << "] "
-                  << "Control type not specified,"
-                  << " using velocity control by default.\n";
-            control.type = "VELOCITY";
-        }
-
-        if (control.type != "VELOCITY" &&
-            control.type != "POSITION" &&
-            control.type != "EFFORT")
-        {
-            gzwarn << "[" << this->data_->model_name_ << "] "
-                   << "Control type [" << control.type
-                   << "] not recognized, must be one of VELOCITY, POSITION, EFFORT."
-                   << " default to VELOCITY.\n";
-            control.type = "VELOCITY";
-        }
-
-        if (controlSDF->HasElement("useForce"))
-        {
-            control.useForce = controlSDF->Get<bool>("useForce"); // stsc -
-        }
+        control.type = "VELOCITY";
 
         if (controlSDF->HasElement("jointName"))
         {
-            control.jointName = controlSDF->Get<std::string>("jointName"); // stsc +
+            control.jointName = controlSDF->Get<std::string>("jointName");
         }
         else
         {
@@ -172,40 +135,17 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
             // overwrite turningDirection, deprecated.
             control.multiplier = controlSDF->Get<double>("multiplier"); // stsc +
         }
-        else if (controlSDF->HasElement("turningDirection"))
-        {
-            gzwarn << "[" << this->data_->model_name_ << "] "
-                   << "<turningDirection> is deprecated. Please use"
-                   << " <multiplier>. Map 'cw' to '-1' and 'ccw' to '1'.\n";
-            std::string turningDirection = controlSDF->Get<std::string>(
-                "turningDirection");
-            // special cases mimic from controls_gazebo_plugins
-            if (turningDirection == "cw")
-            {
-                control.multiplier = -1;
-            }
-            else if (turningDirection == "ccw")
-            {
-                control.multiplier = 1;
-            }
-            else
-            {
-                gzdbg << "[" << this->data_->model_name_ << "] "
-                      << "not string, check turningDirection as float\n";
-                control.multiplier = controlSDF->Get<double>("turningDirection");
-            }
-        }
         else
         {
             gzdbg << "[" << this->data_->model_name_ << "] "
-                  << "<multiplier> (or deprecated <turningDirection>) not specified,"
-                  << " Default 1 (or deprecated <turningDirection> 'ccw').\n";
+                  << "<multiplier> not specified,"
+                  << " Default 1.\n";
             control.multiplier = 1;
         }
 
         if (controlSDF->HasElement("offset"))
         {
-            control.offset = controlSDF->Get<double>("offset"); // stsc +
+            control.offset = controlSDF->Get<double>("offset");
         }
         else
         {
@@ -308,7 +248,6 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
     }
 }
 
-
 void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 {
     this->data_->model_ = model;
@@ -335,7 +274,6 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     gzmsg << "[" << this->data_->model_name_ << "] "
           << "Naze ready to fly. The force will be with you" << std::endl;
 }
-
 
 void NazePlugin::OnWorldUpdate()
 {
@@ -390,64 +328,19 @@ void NazePlugin::OnWorldUpdate()
     this->data_->last_controller_update_time_ = cur_time;
 }
 
-
 void NazePlugin::ApplyMotorForces(const double _dt)
 {
     // update velocity PID for controls and apply force to joint
     for (size_t i = 0; i < this->data_->controls_.size(); ++i)
     {
-        if (this->data_->controls_[i].useForce)
-        {
-            if (this->data_->controls_[i].type == "VELOCITY")
-            {
-                const double velTarget = this->data_->controls_[i].cmd /
-                                         this->data_->controls_[i].rotorVelocitySlowdownSim;
-                const double vel = this->data_->controls_[i].joint->GetVelocity(0);
-                const double error = vel - velTarget;
-                const double force = this->data_->controls_[i].pid.Update(error, _dt);
-                this->data_->controls_[i].joint->SetForce(0, force);
-            }
-            else if (this->data_->controls_[i].type == "POSITION")
-            {
-                const double posTarget = this->data_->controls_[i].cmd;
-                const double pos = this->data_->controls_[i].joint->Position();
-                const double error = pos - posTarget;
-                const double force = this->data_->controls_[i].pid.Update(error, _dt);
-                this->data_->controls_[i].joint->SetForce(0, force);
-            }
-            else if (this->data_->controls_[i].type == "EFFORT")
-            {
-                const double force = this->data_->controls_[i].cmd;
-                this->data_->controls_[i].joint->SetForce(0, force);
-            }
-            else
-            {
-                // do nothing
-            }
-        }
-        else
-        {
-            if (this->data_->controls_[i].type == "VELOCITY")
-            {
-                this->data_->controls_[i].joint->SetVelocity(0, this->data_->controls_[i].cmd);
-            }
-            else if (this->data_->controls_[i].type == "POSITION")
-            {
-                this->data_->controls_[i].joint->SetPosition(0, this->data_->controls_[i].cmd);
-            }
-            else if (this->data_->controls_[i].type == "EFFORT")
-            {
-                const double force = this->data_->controls_[i].cmd;
-                this->data_->controls_[i].joint->SetForce(0, force);
-            }
-            else
-            {
-                // do nothing
-            }
-        }
+        const double velTarget = this->data_->controls_[i].cmd /
+                                 this->data_->controls_[i].rotorVelocitySlowdownSim;
+        const double vel = this->data_->controls_[i].joint->GetVelocity(0);
+        const double error = vel - velTarget;
+        const double force = this->data_->controls_[i].pid.Update(error, _dt);
+        this->data_->controls_[i].joint->SetForce(0, force);
     }
 }
-
 
 void NazePlugin::HandleResetWorld()
 {
@@ -471,7 +364,6 @@ void NazePlugin::HandleResetWorld()
     this->data_->last_imu_update_time_ = 0;
     this->data_->last_gps_update_time_ = 0;
 }
-
 
 void NazePlugin::HandleMotorCommand(struct sitl_motor_t *msg)
 {
@@ -497,13 +389,13 @@ void NazePlugin::HandleMotorCommand(struct sitl_motor_t *msg)
     }
 }
 
-
 void NazePlugin::ResetPIDs()
 {
     // Reset velocity PID for controls
     for (size_t i = 0; i < this->data_->controls_.size(); ++i)
     {
         this->data_->controls_[i].cmd = 0;
+        this->data_->controls_[i].pid.SetCmd(0.0);
         this->data_->controls_[i].pid.Reset();
     }
 }
