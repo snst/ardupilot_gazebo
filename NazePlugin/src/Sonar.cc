@@ -1,6 +1,6 @@
 #include "Sonar.hh"
 #include "sdfHelper.hh"
-#include "/home/stsc/work/ros_ws/sitl_ipc/include/sitl_ipc_sim.h"
+#include "sitl_ipc_sim.h"
 
 using namespace naze;
 using namespace gazebo;
@@ -19,7 +19,6 @@ bool Sonar::Load(physics::ModelPtr model, std::string const &name)
     gzmsg << "Found sonar: " << ret << "\n";
     return ret;
 }
-
 
 void Sonar::SendState() const
 {

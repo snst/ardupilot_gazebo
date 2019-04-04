@@ -1,6 +1,6 @@
 #include "Imu.hh"
 #include "sdfHelper.hh"
-#include "/home/stsc/work/ros_ws/sitl_ipc/include/sitl_ipc_sim.h"
+#include "sitl_ipc_sim.h"
 
 using namespace naze;
 using namespace gazebo;
@@ -41,6 +41,8 @@ void Imu::LoadOrientation(sdf::ElementPtr sdf)
     {
         gazeboXYZToNED_ = sdf->Get<ignition::math::Pose3d>("gazeboXYZToNED");
     }
+
+    gzmsg << "HAS REF: " << (sdf->HasElement("reference_latitude") ? "1" : "0") << "\n";
 }
 
 void Imu::SendState() const

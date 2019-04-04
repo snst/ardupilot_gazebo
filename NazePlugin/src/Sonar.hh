@@ -10,12 +10,12 @@ namespace naze
 
 class Sonar
 {
-  public:
-    void SendState() const;
-    bool Load(physics::ModelPtr model, std::string const &name);
+public:
+  void SendState() const;
+  bool Load(physics::ModelPtr model, std::string const &name);
 
-  protected:
-    sensors::SonarSensorPtr sensor_;
+protected:
+  sensors::SonarSensorPtr sensor_;
 };
 
 } // namespace naze

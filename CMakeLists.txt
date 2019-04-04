@@ -125,6 +125,7 @@ include_directories(
         include
         ${GAZEBO_INCLUDE_DIRS}
         /opt/ros/melodic/include
+        /home/stsc/work/ros_ws/sitl_ipc/include/
         )
 
 link_libraries(

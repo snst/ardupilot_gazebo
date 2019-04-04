@@ -139,6 +139,10 @@
       <link_name>iris::rotor_3</link_name>
     </plugin>
     <plugin name="naze_plugin" filename="libNazePlugin.so">
+
+      <gps_latitude>49.48696</gps_latitude>
+      <gps_longitude>11.1249838</gps_longitude>
+      <gps_altitude>0.0</gps_altitude>
       <!--<fdm_addr>127.0.0.1</fdm_addr>
       <fdm_port_in>9002</fdm_port_in>
       <fdm_port_out>9003</fdm_port_out>-->

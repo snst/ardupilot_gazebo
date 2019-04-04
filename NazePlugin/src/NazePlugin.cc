@@ -320,7 +320,7 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
     this->data_->sonar_.Load(model, "iris_demo::iris::base_link::sonar");
     this->data_->imu_.Load(model, "iris_demo::iris::iris/imu_link::imu_sensor");
-    this->data_->gps_.Load(model, "iris_demo::iris::base_link::gps");
+    this->data_->gps_.Load(model, sdf, "iris_demo::iris::base_link::gps");
 
     this->data_->imu_.LoadOrientation(sdf);
 
