@@ -5,24 +5,10 @@
 using namespace naze;
 using namespace gazebo;
 
-bool Imu::Load(physics::ModelPtr model, std::string const &name)
+bool Imu::Load(physics::ModelPtr model, sdf::ElementPtr sdf, std::string const &name)
 {
-    model_ = model;
-    std::vector<std::string> scopedName = getSensorScopedName(model, name);
+    bool ret = BaseSensor::Load(model, name);
 
-    if (scopedName.size() > 0)
-    {
-        gzmsg << "scopedName[0/" << scopedName.size() << "]: " << scopedName[0] << "\n";
-        sensor_ = std::dynamic_pointer_cast<sensors::ImuSensor>(sensors::SensorManager::Instance()->GetSensor(scopedName[0]));
-    }
-
-    bool ret = (nullptr != sensor_);
-    gzmsg << "Found imu: " << ret << "\n";
-    return ret;
-}
-
-void Imu::LoadOrientation(sdf::ElementPtr sdf)
-{
     // modelXYZToAirplaneXForwardZDown brings us from gazebo model frame:
     // x-forward, y-left, z-up
     // to the aerospace convention: x-forward, y-right, z-down
@@ -42,10 +28,10 @@ void Imu::LoadOrientation(sdf::ElementPtr sdf)
         gazeboXYZToNED_ = sdf->Get<ignition::math::Pose3d>("gazeboXYZToNED");
     }
 
-    gzmsg << "HAS REF: " << (sdf->HasElement("reference_latitude") ? "1" : "0") << "\n";
+    return ret;
 }
 
-void Imu::SendState() const
+void Imu::SendState()
 {
     // asssumed that the imu orientation is:
     //   x forward

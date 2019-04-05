@@ -2,20 +2,21 @@
 #define _GPS_HH_
 
 #include <gazebo/sensors/sensors.hh>
+#include "BaseSensor.hh"
 
 using namespace gazebo;
 
 namespace naze
 {
 
-class Gps
+class Gps : public BaseSensor<sensors::GpsSensor>
 {
 public:
-  void SendState() const;
+  Gps();
+  void SendState();
   bool Load(physics::ModelPtr model, sdf::ElementPtr sdf, std::string const &name);
 
 protected:
-  sensors::GpsSensorPtr sensor_;
   double reference_latitude_;
   double reference_longitude_;
   double reference_altitude_;

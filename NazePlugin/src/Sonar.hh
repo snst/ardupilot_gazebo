@@ -2,20 +2,17 @@
 #define _SONAR_HH_
 
 #include <gazebo/sensors/sensors.hh>
+#include "BaseSensor.hh"
 
 using namespace gazebo;
 
 namespace naze
 {
 
-class Sonar
+class Sonar : public BaseSensor<sensors::SonarSensor>
 {
 public:
-  void SendState() const;
-  bool Load(physics::ModelPtr model, std::string const &name);
-
-protected:
-  sensors::SonarSensorPtr sensor_;
+  void SendState();
 };
 
 } // namespace naze

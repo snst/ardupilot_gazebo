@@ -5,22 +5,7 @@
 using namespace naze;
 using namespace gazebo;
 
-bool Sonar::Load(physics::ModelPtr model, std::string const &name)
-{
-    std::vector<std::string> scopedName = getSensorScopedName(model, name);
-
-    if (scopedName.size() > 0)
-    {
-        gzmsg << "scopedName[0/" << scopedName.size() << "]: " << scopedName[0] << "\n";
-        sensor_ = std::dynamic_pointer_cast<sensors::SonarSensor>(sensors::SensorManager::Instance()->GetSensor(scopedName[0]));
-    }
-
-    bool ret = (nullptr != sensor_);
-    gzmsg << "Found sonar: " << ret << "\n";
-    return ret;
-}
-
-void Sonar::SendState() const
+void Sonar::SendState()
 {
     struct sitl_sonar_t msg;
     msg.distance = sensor_->Range();

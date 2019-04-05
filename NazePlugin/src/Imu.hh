@@ -2,27 +2,24 @@
 #define _IMU_HH_
 
 #include <gazebo/sensors/sensors.hh>
+#include "BaseSensor.hh"
 
 using namespace gazebo;
 
 namespace naze
 {
 
-class Imu
+class Imu : public BaseSensor<sensors::ImuSensor>
 {
-  public:
-    void SendState() const;
-    bool Load(physics::ModelPtr model, std::string const &name);
-    void LoadOrientation(sdf::ElementPtr sdf);
+public:
+  void SendState();
+  bool Load(physics::ModelPtr model, sdf::ElementPtr sdf, std::string const &name);
 
-  protected:
-    /// \brief transform from world frame to NED frame
-    ignition::math::Pose3d gazeboXYZToNED_;
-    /// \brief transform from model orientation to x-forward and z-up
-    ignition::math::Pose3d modelXYZToAirplaneXForwardZDown_;
-
-    sensors::ImuSensorPtr sensor_;
-    physics::ModelPtr model_;
+protected:
+  /// \brief transform from world frame to NED frame
+  ignition::math::Pose3d gazeboXYZToNED_;
+  /// \brief transform from model orientation to x-forward and z-up
+  ignition::math::Pose3d modelXYZToAirplaneXForwardZDown_;
 };
 
 } // namespace naze

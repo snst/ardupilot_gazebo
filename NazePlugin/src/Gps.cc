@@ -5,40 +5,33 @@
 using namespace naze;
 using namespace gazebo;
 
+Gps::Gps()
+    : reference_latitude_(0.0f), reference_longitude_(0.0f), reference_altitude_(0.0f)
+{
+}
+
 bool Gps::Load(physics::ModelPtr model, sdf::ElementPtr sdf, std::string const &name)
 {
-    std::vector<std::string> scopedName = getSensorScopedName(model, name);
+    bool ret = BaseSensor::Load(model, name);
 
-    reference_latitude_ = 0.0f;
-    reference_longitude_ = 0.0f;
-    reference_altitude_ = 0.0f;
-
-    if (scopedName.size() > 0)
+    if (sdf->HasElement("gps_latitude"))
     {
-        gzmsg << "scopedName[0/" << scopedName.size() << "]: " << scopedName[0] << "\n";
-        sensor_ = std::dynamic_pointer_cast<sensors::GpsSensor>(sensors::SensorManager::Instance()->GetSensor(scopedName[0]));
-
-        if (sdf->HasElement("gps_latitude"))
-        {
-            reference_latitude_ = sdf->Get<double>("gps_latitude");
-        }
-        if (sdf->HasElement("gps_longitude"))
-        {
-            reference_longitude_ = sdf->Get<double>("gps_longitude");
-        }
-        if (sdf->HasElement("gps_altitude"))
-        {
-            reference_altitude_ = sdf->Get<double>("gps_altitude");
-        }
+        reference_latitude_ = sdf->Get<double>("gps_latitude");
+    }
+    if (sdf->HasElement("gps_longitude"))
+    {
+        reference_longitude_ = sdf->Get<double>("gps_longitude");
+    }
+    if (sdf->HasElement("gps_altitude"))
+    {
+        reference_altitude_ = sdf->Get<double>("gps_altitude");
     }
 
-    bool ret = (nullptr != sensor_);
-    gzmsg << "Found gps: " << ret << "\n";
     gzmsg << "gps_latitude: " << reference_latitude_ << ", gps_longitude: " << reference_longitude_ << ", gps_altitude: " << reference_altitude_ << "\n";
     return ret;
 }
 
-void Gps::SendState() const
+void Gps::SendState()
 {
     struct sitl_gps_t data;
     data.latitude = reference_latitude_ - sensor_->Latitude().Degree();

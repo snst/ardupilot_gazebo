@@ -22,12 +22,13 @@ GZ_REGISTER_MODEL_PLUGIN(NazePlugin)
 
 void printfxy(int x, int y, const char *format, ...)
 {
+    /*
     va_list args;
     va_start(args, format);
     printf("\033[%d;%dH", 15 + y, x);
     vprintf(format, args);
     va_end(args);
-    fflush(stdout);
+    fflush(stdout);*/
 }
 
 class gazebo::NazePluginPrivate
@@ -38,13 +39,7 @@ class gazebo::NazePluginPrivate
     std::string model_name_;
     std::vector<RotorControl> controls_; /// \brief array of propellers
     gazebo::common::Time last_controller_update_time_;
-    gazebo::common::Time last_imu_update_time_;
-    gazebo::common::Time last_sonar_update_time_;
-    gazebo::common::Time last_gps_update_time_;
-
-    std::mutex mutex_;
-    bool is_online_;
-
+    //    std::mutex mutex_;
     naze::Imu imu_;
     naze::Sonar sonar_;
     naze::Gps gps_;
@@ -53,7 +48,6 @@ class gazebo::NazePluginPrivate
 NazePlugin::NazePlugin()
     : data_(new NazePluginPrivate)
 {
-    data_->is_online_ = false;
     gzmsg << "starting NazePlugin..\n";
     int i = 0;
     while (i > 0)
@@ -73,7 +67,6 @@ NazePlugin::~NazePlugin()
 void NazePlugin::TimerCallback(const ros::TimerEvent &event)
 {
     gzmsg << "TimerCallback called!\n";
-    //SendSonarState();
 }
 
 void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
@@ -258,10 +251,8 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     LoadRotorControls(sdf);
 
     this->data_->sonar_.Load(model, "iris_demo::iris::base_link::sonar");
-    this->data_->imu_.Load(model, "iris_demo::iris::iris/imu_link::imu_sensor");
+    this->data_->imu_.Load(model, sdf, "iris_demo::iris::iris/imu_link::imu_sensor");
     this->data_->gps_.Load(model, sdf, "iris_demo::iris::base_link::gps");
-
-    this->data_->imu_.LoadOrientation(sdf);
 
     sitl_start_ipc();
 
@@ -277,68 +268,30 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 
 void NazePlugin::OnWorldUpdate()
 {
-    std::lock_guard<std::mutex> lock(this->data_->mutex_);
-    static int i = 0;
+    //    std::lock_guard<std::mutex> lock(this->data_->mutex_);
     const gazebo::common::Time cur_time = this->data_->model_->GetWorld()->SimTime();
     double delta_time = (cur_time - this->data_->last_controller_update_time_).Double();
-    double imu_delta_time = (cur_time - this->data_->last_imu_update_time_).Double();
-    double gps_delta_time = (cur_time - this->data_->last_gps_update_time_).Double();
-    double sonar_delta_time = (cur_time - this->data_->last_sonar_update_time_).Double();
+    this->data_->last_controller_update_time_ = cur_time;
 
-    static int iimu = 0, igps = 0, isonar = 0;
-    // Update the control surfaces and publish the new state.
     if (delta_time > 0.0)
     {
-        printfxy(0, 25, "#%i is_online %i, delta %f\n", i, this->data_->is_online_, delta_time);
-        if (this->data_->is_online_)
-        {
-            ApplyMotorForces(delta_time);
+        ApplyMotorForces(delta_time);
 
-            if (imu_delta_time >= 0.0)
-            {
-                this->data_->imu_.SendState();
-                this->data_->last_imu_update_time_ = cur_time;
-                iimu++;
-            }
-
-            if (gps_delta_time >= 0.1)
-            {
-                this->data_->gps_.SendState();
-                this->data_->last_gps_update_time_ = cur_time;
-                igps++;
-            }
-
-            if (sonar_delta_time >= 0.02)
-            {
-                //SendSonarState();
-                this->data_->sonar_.SendState();
-                this->data_->last_sonar_update_time_ = cur_time;
-                isonar++;
-            }
-
-            printfxy(0, 26, "#%i imu #%i, sonar #%i, gps #%i\n", i, iimu, isonar, igps);
-            i++;
-        }
+        this->data_->imu_.Update(cur_time, 0);
+        this->data_->gps_.Update(cur_time, 200);
+        this->data_->sonar_.Update(cur_time, 100);
     }
-    else
-    {
-        printf("skip time\n");
-    }
-
-    this->data_->last_controller_update_time_ = cur_time;
 }
 
 void NazePlugin::ApplyMotorForces(const double _dt)
 {
-    // update velocity PID for controls and apply force to joint
-    for (size_t i = 0; i < this->data_->controls_.size(); ++i)
+    for (auto &ctrl : this->data_->controls_)
     {
-        const double velTarget = this->data_->controls_[i].cmd /
-                                 this->data_->controls_[i].rotorVelocitySlowdownSim;
-        const double vel = this->data_->controls_[i].joint->GetVelocity(0);
+        const double velTarget = ctrl.cmd / ctrl.rotorVelocitySlowdownSim;
+        const double vel = ctrl.joint->GetVelocity(0);
         const double error = vel - velTarget;
-        const double force = this->data_->controls_[i].pid.Update(error, _dt);
-        this->data_->controls_[i].joint->SetForce(0, force);
+        const double force = ctrl.pid.Update(error, _dt);
+        ctrl.joint->SetForce(0, force);
     }
 }
 
@@ -354,48 +307,34 @@ void NazePlugin::HandleResetWorld()
     transport::PublisherPtr worldControlPub =
         node->Advertise<msgs::WorldControl>("~/world_control");
 
-    // Copied from MainWindow::OnHandleResetWorld
     msgs::WorldControl msg;
     msg.mutable_reset()->set_all(true);
     worldControlPub->Publish(msg);
 
     this->data_->last_controller_update_time_ = 0;
-    this->data_->last_sonar_update_time_ = 0;
-    this->data_->last_imu_update_time_ = 0;
-    this->data_->last_gps_update_time_ = 0;
 }
 
 void NazePlugin::HandleMotorCommand(struct sitl_motor_t *msg)
 {
-    float pkt[] = {msg->motor[0], msg->motor[1], msg->motor[2], msg->motor[3]};
-    const ssize_t recvChannels = 4;
-    this->data_->is_online_ = true;
-
     // compute command based on requested motorSpeed
-    for (unsigned i = 0; i < this->data_->controls_.size(); ++i)
+    for (auto &ctrl : this->data_->controls_)
     {
-        if (i < MAX_MOTORS)
+        if (ctrl.channel < MAX_MOTOR)
         {
-            if (this->data_->controls_[i].channel < recvChannels)
-            {
-                // bound incoming cmd between -1 and 1
-                const double cmd = ignition::math::clamp(
-                    pkt[this->data_->controls_[i].channel],
-                    -1.0f, 1.0f);
-                this->data_->controls_[i].cmd =
-                    this->data_->controls_[i].multiplier * (cmd + this->data_->controls_[i].offset);
-            }
+            // bound incoming cmd between -1 and 1
+            const double cmd = ignition::math::clamp(
+                msg->motor[ctrl.channel],
+                -1.0f, 1.0f);
+            ctrl.cmd = ctrl.multiplier * (cmd + ctrl.offset);
         }
     }
 }
 
 void NazePlugin::ResetPIDs()
 {
-    // Reset velocity PID for controls
-    for (size_t i = 0; i < this->data_->controls_.size(); ++i)
+    for (auto &ctrl : this->data_->controls_)
     {
-        this->data_->controls_[i].cmd = 0;
-        this->data_->controls_[i].pid.SetCmd(0.0);
-        this->data_->controls_[i].pid.Reset();
+        ctrl.cmd = 0;
+        ctrl.pid.Reset();
     }
 }
