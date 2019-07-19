@@ -124,20 +124,21 @@ include_directories(
         ${PROJECT_SOURCE_DIR}
         include
         ${GAZEBO_INCLUDE_DIRS}
-        /opt/ros/melodic/include
-        /home/stsc/work/ros_ws/sitl_ipc/include/
+        /home/stsc/work/fccom/impl/include
         )
 
 link_libraries(
         ${GAZEBO_LIBRARIES}
-        roscpp
-        sitl_ipc_sim
+        fcl_sim_proxy
+        fcl_fc_proxy
+        fcl_common
         )
 
 link_directories(
         ${GAZEBO_LIBRARY_DIRS}
-        /opt/ros/melodic/lib
-        /home/stsc/work/ros_ws/sitl_ipc/lib
+        /home/stsc/work/fccom/build/impl/src/fc_proxy
+        /home/stsc/work/fccom/build/impl/src/sim_proxy
+        /home/stsc/work/fccom/build/impl/src/common
         )
 
 set (plugins_single_header

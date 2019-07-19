@@ -4,10 +4,9 @@
 #include <sdf/sdf.hh>
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
-#include <ros/ros.h>
-#include "/home/stsc/work/ros_ws/sitl_ipc/include/sitl_ipc_sim.h"
+#include "fcl_types.h"
 
-#define MAX_MOTORS 4
+//#define MAX_MOTORS 4
 
 namespace gazebo
 {
@@ -19,13 +18,13 @@ public:
   NazePlugin();
   ~NazePlugin();
   virtual void Load(physics::ModelPtr model, sdf::ElementPtr sdf);
-  void HandleMotorCommand(struct sitl_motor_t *msg);
+  void HandleMotorCommand(fcl_motor_t* motor);
   void HandleResetWorld();
 
 private:
   std::unique_ptr<NazePluginPrivate> data_;
 
-  void TimerCallback(const ros::TimerEvent &event);
+  //void TimerCallback(const ros::TimerEvent &event);
   void OnWorldUpdate();
   void ApplyMotorForces(const double dt);
   void ResetPIDs();

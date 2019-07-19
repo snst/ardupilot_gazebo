@@ -1,6 +1,8 @@
 #include "Imu.hh"
 #include "sdfHelper.hh"
-#include "sitl_ipc_sim.h"
+#include "fcl_types.h"
+#include "fcl_sim_proxy.h"
+#include "fcl_fc_proxy.h"
 
 using namespace naze;
 using namespace gazebo;
@@ -37,6 +39,7 @@ void Imu::SendState()
     //   x forward
     //   y right
     //   z down
+    gzmsg << "Imu::SendState\n";
 
     // get linear acceleration in body frame
     const ignition::math::Vector3d linearAccel =
@@ -57,7 +60,7 @@ void Imu::SendState()
     const ignition::math::Vector3d velGazeboWorldFrame = model_->GetLink()->WorldLinearVel();
     const ignition::math::Vector3d velNEDFrame = gazeboXYZToNED_.Rot().RotateVectorReverse(velGazeboWorldFrame);
 
-    struct sitl_imu_t imu;
+    fcl_imu_t imu;
     imu.orientation_quat_w = NEDToModelXForwardZUp.Rot().W();
     imu.orientation_quat_x = NEDToModelXForwardZUp.Rot().X();
     imu.orientation_quat_y = NEDToModelXForwardZUp.Rot().Y();
@@ -70,14 +73,13 @@ void Imu::SendState()
     imu.linear_acceleration_x = linearAccel.X();
     imu.linear_acceleration_y = linearAccel.Y();
     imu.linear_acceleration_z = linearAccel.Z();
-    sitl_set_imu(&imu);
 
-    struct sitl_pos_t pos;
+    fcl_pos_t pos;
     pos.x = NEDToModelXForwardZUp.Pos().X();
     pos.y = NEDToModelXForwardZUp.Pos().Y();
     pos.z = NEDToModelXForwardZUp.Pos().Z();
-    sitl_set_pos(&pos);
+    fcl_send_to_fc(ePos, &pos);
 
-    double simtime = model_->GetWorld()->SimTime().Double();
-    sitl_set_simtime(simtime);
+    imu.sim_time = model_->GetWorld()->SimTime().Double();
+    fcl_send_to_fc(eImu, &imu);
 }

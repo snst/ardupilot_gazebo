@@ -15,13 +15,20 @@
 #include "Sonar.hh"
 #include "Gps.hh"
 #include "Imu.hh"
+#include "fcl_sim_proxy.h"
+#include "fcl_fc_proxy.h"
 
 using namespace gazebo;
 
 GZ_REGISTER_MODEL_PLUGIN(NazePlugin)
 
+NazePlugin* g_plugin = NULL;
+
 void printfxy(int x, int y, const char *format, ...)
 {
+    x;
+    y;
+    format;
     /*
     va_list args;
     va_start(args, format);
@@ -48,7 +55,8 @@ class gazebo::NazePluginPrivate
 NazePlugin::NazePlugin()
     : data_(new NazePluginPrivate)
 {
-    gzmsg << "starting NazePlugin..\n";
+    g_plugin = this;
+    gzmsg << "starting NazePlugin...\n";
     int i = 0;
     while (i > 0)
     {
@@ -63,11 +71,11 @@ NazePlugin::NazePlugin()
 NazePlugin::~NazePlugin()
 {
 }
-
+/*
 void NazePlugin::TimerCallback(const ros::TimerEvent &event)
 {
     gzmsg << "TimerCallback called!\n";
-}
+}*/
 
 void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 {
@@ -241,6 +249,20 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
     }
 }
 
+void on_fcl_data(fclCmd_t data)
+{
+    gzmsg << "on_fcl_data\n";
+    if(data == eMotor) {
+        fcl_motor_t motor;
+        if (fcl_get_from_fc(eMotor, &motor)) {
+            if(NULL != g_plugin) {
+                g_plugin->HandleMotorCommand(&motor);
+            }
+        }
+    }
+}
+
+
 void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
 {
     this->data_->model_ = model;
@@ -254,10 +276,10 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     this->data_->imu_.Load(model, sdf, "iris_demo::iris::iris/imu_link::imu_sensor");
     this->data_->gps_.Load(model, sdf, "iris_demo::iris::base_link::gps");
 
-    sitl_start_ipc();
+    fcl_init_fc_proxy(&on_fcl_data);
 
-    sitl_register_motor_callback(boost::bind(&NazePlugin::HandleMotorCommand, this, _1));
-    sitl_register_reset_world_callback(boost::bind(&NazePlugin::HandleResetWorld, this));
+    //sitl_register_motor_callback(boost::bind(&NazePlugin::HandleMotorCommand, this, _1));
+    //sitl_register_reset_world_callback(boost::bind(&NazePlugin::HandleResetWorld, this));
 
     this->data_->update_connection_ = event::Events::ConnectWorldUpdateBegin(
         std::bind(&NazePlugin::OnWorldUpdate, this));
@@ -272,6 +294,7 @@ void NazePlugin::OnWorldUpdate()
     const gazebo::common::Time cur_time = this->data_->model_->GetWorld()->SimTime();
     double delta_time = (cur_time - this->data_->last_controller_update_time_).Double();
     this->data_->last_controller_update_time_ = cur_time;
+    gzmsg << "OnWorldUpdate\n";
 
     if (delta_time > 0.0)
     {
@@ -314,16 +337,16 @@ void NazePlugin::HandleResetWorld()
     this->data_->last_controller_update_time_ = 0;
 }
 
-void NazePlugin::HandleMotorCommand(struct sitl_motor_t *msg)
+void NazePlugin::HandleMotorCommand(fcl_motor_t* motor)
 {
     // compute command based on requested motorSpeed
     for (auto &ctrl : this->data_->controls_)
     {
-        if (ctrl.channel < MAX_MOTOR)
+        if (ctrl.channel < MAX_MOTORS)
         {
             // bound incoming cmd between -1 and 1
             const double cmd = ignition::math::clamp(
-                msg->motor[ctrl.channel],
+                motor->motor[ctrl.channel],
                 -1.0f, 1.0f);
             ctrl.cmd = ctrl.multiplier * (cmd + ctrl.offset);
         }

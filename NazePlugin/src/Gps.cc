@@ -1,6 +1,8 @@
 #include "Gps.hh"
 #include "sdfHelper.hh"
-#include "sitl_ipc_sim.h"
+#include "fcl_types.h"
+#include "fcl_sim_proxy.h"
+#include "fcl_fc_proxy.h"
 
 using namespace naze;
 using namespace gazebo;
@@ -33,10 +35,11 @@ bool Gps::Load(physics::ModelPtr model, sdf::ElementPtr sdf, std::string const &
 
 void Gps::SendState()
 {
-    struct sitl_gps_t data;
-    data.latitude = reference_latitude_ - sensor_->Latitude().Degree();
-    data.longitude = reference_longitude_ - sensor_->Longitude().Degree();
-    data.altitude = reference_altitude_ + sensor_->Altitude();
-    data.status = 0; //sensor_msgs::NavSatStatus::STATUS_FIX;
-    sitl_set_gps(&data);
+    fcl_gps_t gps;
+    gps.latitude = reference_latitude_ - sensor_->Latitude().Degree();
+    gps.longitude = reference_longitude_ - sensor_->Longitude().Degree();
+    gps.altitude = reference_altitude_ + sensor_->Altitude();
+    gps.status = 0; //sensor_msgs::NavSatStatus::STATUS_FIX;
+    gps.satellites = 8;
+    fcl_send_to_fc(eGps, &gps);
 }
