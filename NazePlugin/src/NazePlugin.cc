@@ -251,7 +251,8 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 
 void on_fcl_data(fclCmd_t data)
 {
-    gzmsg << "on_fcl_data\n";
+    //gzmsg << "on_fcl_data\n";
+
     if(data == eMotor) {
         fcl_motor_t motor;
         if (fcl_get_from_fc(eMotor, &motor)) {
@@ -259,6 +260,9 @@ void on_fcl_data(fclCmd_t data)
                 g_plugin->HandleMotorCommand(&motor);
             }
         }
+    } else if(data == eResetWorld) {
+        gzmsg << "eResetWorld\n";
+        g_plugin->HandleResetWorld();
     }
 }
 

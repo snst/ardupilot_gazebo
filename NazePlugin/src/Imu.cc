@@ -60,26 +60,24 @@ void Imu::SendState()
     const ignition::math::Vector3d velGazeboWorldFrame = model_->GetLink()->WorldLinearVel();
     const ignition::math::Vector3d velNEDFrame = gazeboXYZToNED_.Rot().RotateVectorReverse(velGazeboWorldFrame);
 
-    fcl_imu_t imu;
-    imu.orientation_quat_w = NEDToModelXForwardZUp.Rot().W();
-    imu.orientation_quat_x = NEDToModelXForwardZUp.Rot().X();
-    imu.orientation_quat_y = NEDToModelXForwardZUp.Rot().Y();
-    imu.orientation_quat_z = NEDToModelXForwardZUp.Rot().Z();
+    fcl_fcstate_t state;
+    state.imu.orientation_quat_w = NEDToModelXForwardZUp.Rot().W();
+    state.imu.orientation_quat_x = NEDToModelXForwardZUp.Rot().X();
+    state.imu.orientation_quat_y = NEDToModelXForwardZUp.Rot().Y();
+    state.imu.orientation_quat_z = NEDToModelXForwardZUp.Rot().Z();
 
-    imu.angular_velocity_r = angularVel.X();
-    imu.angular_velocity_p = angularVel.Y();
-    imu.angular_velocity_y = angularVel.Z();
+    state.imu.angular_velocity_r = angularVel.X();
+    state.imu.angular_velocity_p = angularVel.Y();
+    state.imu.angular_velocity_y = angularVel.Z();
 
-    imu.linear_acceleration_x = linearAccel.X();
-    imu.linear_acceleration_y = linearAccel.Y();
-    imu.linear_acceleration_z = linearAccel.Z();
+    state.imu.linear_acceleration_x = linearAccel.X();
+    state.imu.linear_acceleration_y = linearAccel.Y();
+    state.imu.linear_acceleration_z = linearAccel.Z();
 
-    fcl_pos_t pos;
-    pos.x = NEDToModelXForwardZUp.Pos().X();
-    pos.y = NEDToModelXForwardZUp.Pos().Y();
-    pos.z = NEDToModelXForwardZUp.Pos().Z();
-    fcl_send_to_fc(ePos, &pos);
+    state.pos.x = NEDToModelXForwardZUp.Pos().X();
+    state.pos.y = NEDToModelXForwardZUp.Pos().Y();
+    state.pos.z = NEDToModelXForwardZUp.Pos().Z();
 
-    imu.sim_time = model_->GetWorld()->SimTime().Double();
-    fcl_send_to_fc(eImu, &imu);
+    state.sim_time = model_->GetWorld()->SimTime().Double();
+    fcl_send_to_fc(eFcstate, &state);
 }
