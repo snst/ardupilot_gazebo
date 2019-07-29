@@ -39,7 +39,7 @@ void Imu::SendState()
     //   x forward
     //   y right
     //   z down
-    gzmsg << "Imu::SendState\n";
+    //gzmsg << "Imu::SendState\n";
 
     // get linear acceleration in body frame
     const ignition::math::Vector3d linearAccel =

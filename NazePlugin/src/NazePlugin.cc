@@ -22,8 +22,6 @@ using namespace gazebo;
 
 GZ_REGISTER_MODEL_PLUGIN(NazePlugin)
 
-NazePlugin* g_plugin = NULL;
-
 void printfxy(int x, int y, const char *format, ...)
 {
     x;
@@ -55,7 +53,6 @@ class gazebo::NazePluginPrivate
 NazePlugin::NazePlugin()
     : data_(new NazePluginPrivate)
 {
-    g_plugin = this;
     gzmsg << "starting NazePlugin...\n";
     int i = 0;
     while (i > 0)
@@ -71,11 +68,6 @@ NazePlugin::NazePlugin()
 NazePlugin::~NazePlugin()
 {
 }
-/*
-void NazePlugin::TimerCallback(const ros::TimerEvent &event)
-{
-    gzmsg << "TimerCallback called!\n";
-}*/
 
 void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
 {
@@ -249,20 +241,19 @@ void NazePlugin::LoadRotorControls(sdf::ElementPtr sdf)
     }
 }
 
-void on_fcl_data(fclCmd_t data)
+void on_fcl_data(void* ptr, fclCmd_t data)
 {
-    //gzmsg << "on_fcl_data\n";
-
-    if(data == eMotor) {
-        fcl_motor_t motor;
-        if (fcl_get_from_fc(eMotor, &motor)) {
-            if(NULL != g_plugin) {
-                g_plugin->HandleMotorCommand(&motor);
+    if (NULL != ptr) {
+        NazePlugin* plugin = (NazePlugin*)ptr;
+        if(data == eMotor) {
+            fcl_motor_t motor;
+            if (fcl_get_from_fc(eMotor, &motor)) {
+                plugin->HandleMotorCommand(&motor);
             }
+        } else if(data == eResetWorld) {
+            gzmsg << "eResetWorld\n";
+            plugin->HandleResetWorld();
         }
-    } else if(data == eResetWorld) {
-        gzmsg << "eResetWorld\n";
-        g_plugin->HandleResetWorld();
     }
 }
 
@@ -280,7 +271,7 @@ void NazePlugin::Load(physics::ModelPtr model, sdf::ElementPtr sdf)
     this->data_->imu_.Load(model, sdf, "iris_demo::iris::iris/imu_link::imu_sensor");
     this->data_->gps_.Load(model, sdf, "iris_demo::iris::base_link::gps");
 
-    fcl_init_fc_proxy(&on_fcl_data);
+    fcl_init_fc_proxy(this, &on_fcl_data);
 
     //sitl_register_motor_callback(boost::bind(&NazePlugin::HandleMotorCommand, this, _1));
     //sitl_register_reset_world_callback(boost::bind(&NazePlugin::HandleResetWorld, this));
@@ -298,7 +289,7 @@ void NazePlugin::OnWorldUpdate()
     const gazebo::common::Time cur_time = this->data_->model_->GetWorld()->SimTime();
     double delta_time = (cur_time - this->data_->last_controller_update_time_).Double();
     this->data_->last_controller_update_time_ = cur_time;
-    gzmsg << "OnWorldUpdate\n";
+    //gzmsg << "OnWorldUpdate\n";
 
     if (delta_time > 0.0)
     {
@@ -322,9 +313,14 @@ void NazePlugin::ApplyMotorForces(const double _dt)
     }
 }
 
+void NazePlugin::Reset()
+{
+    //gzmsg << "NazePlugin::Reset()\n";
+}
+
 void NazePlugin::HandleResetWorld()
 {
-    printf("RESET!!\n");
+    //gzmsg << "RESET!!\n";
     this->ResetPIDs();
     // Send reset world message
     transport::NodePtr node = transport::NodePtr(new transport::Node());
@@ -335,7 +331,9 @@ void NazePlugin::HandleResetWorld()
         node->Advertise<msgs::WorldControl>("~/world_control");
 
     msgs::WorldControl msg;
-    msg.mutable_reset()->set_all(true);
+//    msg.mutable_reset()->set_all(true);
+    msg.mutable_reset()->set_model_only(true);
+    
     worldControlPub->Publish(msg);
 
     this->data_->last_controller_update_time_ = 0;
@@ -363,5 +361,6 @@ void NazePlugin::ResetPIDs()
     {
         ctrl.cmd = 0;
         ctrl.pid.Reset();
+        ctrl.joint->Reset();
     }
 }

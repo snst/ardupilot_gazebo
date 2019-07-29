@@ -20,6 +20,7 @@ public:
   virtual void Load(physics::ModelPtr model, sdf::ElementPtr sdf);
   void HandleMotorCommand(fcl_motor_t* motor);
   void HandleResetWorld();
+  virtual void Reset();
 
 private:
   std::unique_ptr<NazePluginPrivate> data_;
