@@ -120,11 +120,14 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VALID_CXX_FLAGS} ${UNFILTERED_FLAGS}"
 ## Build ##
 ###########
 
+cmake_policy(SET CMP0015 NEW)
+
+
 include_directories(
         ${PROJECT_SOURCE_DIR}
         include
         ${GAZEBO_INCLUDE_DIRS}
-        /home/stsc/work/fccom/impl/include
+        ../fccom/impl/include
         )
 
 link_libraries(
@@ -136,9 +139,9 @@ link_libraries(
 
 link_directories(
         ${GAZEBO_LIBRARY_DIRS}
-        /home/stsc/work/fccom/build/impl/src/fc_proxy
-        /home/stsc/work/fccom/build/impl/src/sim_proxy
-        /home/stsc/work/fccom/build/impl/src/common
+        ../fccom/build/impl/src/fc_proxy
+        ../fccom/build/impl/src/sim_proxy
+        ../fccom/build/impl/src/common
         )
 
 set (plugins_single_header
